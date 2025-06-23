@@ -19,7 +19,7 @@ export async function updateAffiliateForOrder(order: Order) {
       await insertAffiliate({
         user_uuid: user.uuid,
         invited_by: user.invited_by,
-        created_at: getIsoTimestr(),
+        created_at: new Date(),
         status: AffiliateStatus.Completed,
         paid_order_no: order.order_no,
         paid_amount: order.amount,

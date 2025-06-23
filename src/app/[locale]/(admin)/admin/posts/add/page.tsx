@@ -136,9 +136,9 @@ export default async function () {
           throw new Error("post with same slug already exists");
         }
 
-        const post: Post = {
+        const post = {
           uuid: getUuid(),
-          created_at: getIsoTimestr(),
+          created_at: new Date(),
           status: status as PostStatus,
           title,
           slug,

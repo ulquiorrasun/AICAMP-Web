@@ -161,8 +161,8 @@ export default async function ({
           throw new Error("post with same slug already exists");
         }
 
-        const updatedPost: Partial<Post> = {
-          updated_at: getIsoTimestr(),
+        const updatedPost = {
+          updated_at: new Date(),
           status,
           title,
           slug,

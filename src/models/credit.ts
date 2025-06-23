@@ -1,68 +1,53 @@
-import { Credit } from "@/types/credit";
-import { getSupabaseClient } from "@/models/db";
+import { credits } from "@/db/schema";
+import { db } from "@/db";
+import { desc, eq, and, gte, asc } from "drizzle-orm";
 
-export async function insertCredit(credit: Credit) {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from("credits").insert(credit);
+export async function insertCredit(
+  data: typeof credits.$inferInsert
+): Promise<typeof credits.$inferSelect | undefined> {
+  const [credit] = await db().insert(credits).values(data).returning();
 
-  if (error) {
-    throw error;
-  }
-
-  return data;
+  return credit;
 }
 
 export async function findCreditByTransNo(
   trans_no: string
-): Promise<Credit | undefined> {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("credits")
-    .select("*")
-    .eq("trans_no", trans_no)
-    .limit(1)
-    .single();
+): Promise<typeof credits.$inferSelect | undefined> {
+  const [credit] = await db()
+    .select()
+    .from(credits)
+    .where(eq(credits.trans_no, trans_no))
+    .limit(1);
 
-  if (error) {
-    return undefined;
-  }
-
-  return data;
+  return credit;
 }
 
 export async function findCreditByOrderNo(
   order_no: string
-): Promise<Credit | undefined> {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("credits")
-    .select("*")
-    .eq("order_no", order_no)
-    .limit(1)
-    .single();
+): Promise<typeof credits.$inferSelect | undefined> {
+  const [credit] = await db()
+    .select()
+    .from(credits)
+    .where(eq(credits.order_no, order_no))
+    .limit(1);
 
-  if (error) {
-    return undefined;
-  }
-
-  return data;
+  return credit;
 }
 
 export async function getUserValidCredits(
   user_uuid: string
-): Promise<Credit[] | undefined> {
+): Promise<(typeof credits.$inferSelect)[] | undefined> {
   const now = new Date().toISOString();
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("credits")
-    .select("*")
-    .eq("user_uuid", user_uuid)
-    .gte("expired_at", now)
-    .order("expired_at", { ascending: true });
-
-  if (error) {
-    return undefined;
-  }
+  const data = await db()
+    .select()
+    .from(credits)
+    .where(
+      and(
+        gte(credits.expired_at, new Date(now)),
+        eq(credits.user_uuid, user_uuid)
+      )
+    )
+    .orderBy(asc(credits.expired_at));
 
   return data;
 }
@@ -71,18 +56,14 @@ export async function getCreditsByUserUuid(
   user_uuid: string,
   page: number = 1,
   limit: number = 50
-): Promise<Credit[] | undefined> {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("credits")
-    .select("*")
-    .eq("user_uuid", user_uuid)
-    .order("created_at", { ascending: false })
-    .range((page - 1) * limit, page * limit - 1);
-
-  if (error) {
-    return undefined;
-  }
+): Promise<(typeof credits.$inferSelect)[] | undefined> {
+  const data = await db()
+    .select()
+    .from(credits)
+    .where(eq(credits.user_uuid, user_uuid))
+    .orderBy(desc(credits.created_at))
+    .limit(limit)
+    .offset((page - 1) * limit);
 
   return data;
 }

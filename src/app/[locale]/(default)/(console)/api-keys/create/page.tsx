@@ -1,10 +1,8 @@
 import { ApikeyStatus, insertApikey } from "@/models/apikey";
 
-import { Apikey } from "@/types/apikey";
 import Empty from "@/components/blocks/empty";
 import FormSlot from "@/components/console/slots/form";
 import { Form as FormSlotType } from "@/types/slots/form";
-import { getIsoTimestr } from "@/lib/time";
 import { getNonceStr } from "@/lib/hash";
 import { getTranslations } from "next-intl/server";
 import { getUserUuid } from "@/services/user";
@@ -65,11 +63,11 @@ export default async function () {
 
         const key = `sk-${getNonceStr(32)}`;
 
-        const apikey: Apikey = {
+        const apikey = {
           user_uuid,
           api_key: key,
           title,
-          created_at: getIsoTimestr(),
+          created_at: new Date(),
           status: ApikeyStatus.Created,
         };
 

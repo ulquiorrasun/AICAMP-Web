@@ -1,5 +1,7 @@
-import { Order } from "@/types/order";
-import { getSupabaseClient } from "@/models/db";
+import { orders } from "@/db/schema";
+import { db } from "@/db";
+import { asc, desc, eq, gte } from "drizzle-orm";
+import { and } from "drizzle-orm";
 
 export enum OrderStatus {
   Created = "created",
@@ -7,72 +9,55 @@ export enum OrderStatus {
   Deleted = "deleted",
 }
 
-export async function insertOrder(order: Order) {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from("orders").insert(order);
+export async function insertOrder(data: typeof orders.$inferInsert) {
+  const [order] = await db().insert(orders).values(data).returning();
 
-  if (error) {
-    throw error;
-  }
-
-  return data;
+  return order;
 }
 
 export async function findOrderByOrderNo(
   order_no: string
-): Promise<Order | undefined> {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("orders")
-    .select("*")
-    .eq("order_no", order_no)
-    .single();
+): Promise<typeof orders.$inferSelect | undefined> {
+  const [order] = await db()
+    .select()
+    .from(orders)
+    .where(eq(orders.order_no, order_no))
+    .limit(1);
 
-  if (error) {
-    return undefined;
-  }
-
-  return data;
+  return order;
 }
 
 export async function getFirstPaidOrderByUserUuid(
   user_uuid: string
-): Promise<Order | undefined> {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("orders")
-    .select("*")
-    .eq("user_uuid", user_uuid)
-    .eq("status", "paid")
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .single();
+): Promise<typeof orders.$inferSelect | undefined> {
+  const [order] = await db()
+    .select()
+    .from(orders)
+    .where(
+      and(eq(orders.user_uuid, user_uuid), eq(orders.status, OrderStatus.Paid))
+    )
+    .orderBy(asc(orders.created_at))
+    .limit(1);
 
-  if (error) {
-    return undefined;
-  }
-
-  return data;
+  return order;
 }
 
 export async function getFirstPaidOrderByUserEmail(
   user_email: string
-): Promise<Order | undefined> {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("orders")
-    .select("*")
-    .eq("user_email", user_email)
-    .eq("status", "paid")
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .single();
+): Promise<typeof orders.$inferSelect | undefined> {
+  const [order] = await db()
+    .select()
+    .from(orders)
+    .where(
+      and(
+        eq(orders.user_email, user_email),
+        eq(orders.status, OrderStatus.Paid)
+      )
+    )
+    .orderBy(desc(orders.created_at))
+    .limit(1);
 
-  if (error) {
-    return undefined;
-  }
-
-  return data;
+  return order;
 }
 
 export async function updateOrderStatus(
@@ -82,17 +67,13 @@ export async function updateOrderStatus(
   paid_email: string,
   paid_detail: string
 ) {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("orders")
-    .update({ status, paid_at, paid_detail, paid_email })
-    .eq("order_no", order_no);
+  const [order] = await db()
+    .update(orders)
+    .set({ status, paid_at: new Date(paid_at), paid_detail, paid_email })
+    .where(eq(orders.order_no, order_no))
+    .returning();
 
-  if (error) {
-    throw error;
-  }
-
-  return data;
+  return order;
 }
 
 export async function updateOrderSession(
@@ -100,17 +81,13 @@ export async function updateOrderSession(
   stripe_session_id: string,
   order_detail: string
 ) {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("orders")
-    .update({ stripe_session_id, order_detail })
-    .eq("order_no", order_no);
+  const [order] = await db()
+    .update(orders)
+    .set({ stripe_session_id, order_detail })
+    .where(eq(orders.order_no, order_no))
+    .returning();
 
-  if (error) {
-    throw error;
-  }
-
-  return data;
+  return order;
 }
 
 export async function updateOrderSubscription(
@@ -126,86 +103,70 @@ export async function updateOrderSubscription(
   paid_email: string,
   paid_detail: string
 ) {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("orders")
-    .update({
+  const [order] = await db()
+    .update(orders)
+    .set({
       sub_id,
       sub_interval_count,
       sub_cycle_anchor,
       sub_period_end,
       sub_period_start,
       status,
-      paid_at,
+      paid_at: new Date(paid_at),
       sub_times,
       paid_email,
       paid_detail,
     })
-    .eq("order_no", order_no);
+    .where(eq(orders.order_no, order_no))
+    .returning();
 
-  if (error) {
-    throw error;
-  }
-
-  return data;
+  return order;
 }
 
 export async function getOrdersByUserUuid(
   user_uuid: string
-): Promise<Order[] | undefined> {
-  const now = new Date().toISOString();
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("orders")
-    .select("*")
-    .eq("user_uuid", user_uuid)
-    .eq("status", "paid")
-    .order("created_at", { ascending: false });
-  // .gte("expired_at", now);
-
-  if (error) {
-    return undefined;
-  }
+): Promise<(typeof orders.$inferSelect)[] | undefined> {
+  const data = await db()
+    .select()
+    .from(orders)
+    .where(
+      and(eq(orders.user_uuid, user_uuid), eq(orders.status, OrderStatus.Paid))
+    )
+    .orderBy(desc(orders.created_at));
 
   return data;
 }
 
 export async function getOrdersByUserEmail(
   user_email: string
-): Promise<Order[] | undefined> {
-  const now = new Date().toISOString();
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("orders")
-    .select("*")
-    .eq("user_email", user_email)
-    .eq("status", "paid")
-    .order("created_at", { ascending: false });
-  // .gte("expired_at", now);
-
-  if (error) {
-    return undefined;
-  }
+): Promise<(typeof orders.$inferSelect)[] | undefined> {
+  const data = await db()
+    .select()
+    .from(orders)
+    .where(
+      and(
+        eq(orders.user_email, user_email),
+        eq(orders.status, OrderStatus.Paid)
+      )
+    )
+    .orderBy(desc(orders.created_at));
 
   return data;
 }
 
 export async function getOrdersByPaidEmail(
   paid_email: string
-): Promise<Order[] | undefined> {
-  const now = new Date().toISOString();
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("orders")
-    .select("*")
-    .eq("paid_email", paid_email)
-    .eq("status", "paid")
-    .order("created_at", { ascending: false });
-  // .gte("expired_at", now);
-
-  if (error) {
-    return undefined;
-  }
+): Promise<(typeof orders.$inferSelect)[] | undefined> {
+  const data = await db()
+    .select()
+    .from(orders)
+    .where(
+      and(
+        eq(orders.paid_email, paid_email),
+        eq(orders.status, OrderStatus.Paid)
+      )
+    )
+    .orderBy(desc(orders.created_at));
 
   return data;
 }
@@ -213,59 +174,38 @@ export async function getOrdersByPaidEmail(
 export async function getPaiedOrders(
   page: number,
   limit: number
-): Promise<Order[] | undefined> {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("orders")
-    .select("*")
-    .eq("status", "paid")
-    .order("created_at", { ascending: false })
-    .range((page - 1) * limit, page * limit);
-
-  if (error) {
-    return undefined;
-  }
+): Promise<(typeof orders.$inferSelect)[] | undefined> {
+  const data = await db()
+    .select()
+    .from(orders)
+    .where(eq(orders.status, OrderStatus.Paid))
+    .orderBy(desc(orders.created_at))
+    .limit(limit)
+    .offset((page - 1) * limit);
 
   return data;
 }
 
 export async function getPaidOrdersTotal(): Promise<number | undefined> {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("orders")
-    .select("count", { count: "exact" })
-    .eq("status", "paid");
+  const total = await db().$count(orders);
 
-  if (error) {
-    return undefined;
-  }
-
-  return data[0].count;
+  return total;
 }
 
 export async function getOrderCountByDate(
   startTime: string,
   status?: string
 ): Promise<Map<string, number> | undefined> {
-  const supabase = getSupabaseClient();
-  let query = supabase
-    .from("orders")
-    .select("created_at")
-    .gte("created_at", startTime);
-  if (status) {
-    query = query.eq("status", status);
-  }
-  query = query.order("created_at", { ascending: true });
+  const data = await db()
+    .select({ created_at: orders.created_at })
+    .from(orders)
+    .where(gte(orders.created_at, new Date(startTime)));
 
-  const { data, error } = await query;
-  if (error) {
-    return undefined;
-  }
+  data.sort((a, b) => a.created_at!.getTime() - b.created_at!.getTime());
 
-  // Group by date in memory since Supabase doesn't support GROUP BY directly
   const dateCountMap = new Map<string, number>();
   data.forEach((item) => {
-    const date = item.created_at.split("T")[0];
+    const date = item.created_at!.toISOString().split("T")[0];
     dateCountMap.set(date, (dateCountMap.get(date) || 0) + 1);
   });
 

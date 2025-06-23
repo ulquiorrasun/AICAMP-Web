@@ -48,7 +48,7 @@ export async function POST(req: Request) {
     await insertAffiliate({
       user_uuid: user_uuid,
       invited_by: inviteUser.uuid,
-      created_at: getIsoTimestr(),
+      created_at: new Date(),
       status: AffiliateStatus.Pending,
       paid_order_no: "",
       paid_amount: 0,

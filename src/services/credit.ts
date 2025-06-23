@@ -3,14 +3,12 @@ import {
   getUserValidCredits,
   insertCredit,
 } from "@/models/credit";
-
-import { Credit } from "@/types/credit";
-import { Order } from "@/types/order";
-import { UserCredits } from "@/types/user";
-import { findUserByUuid } from "@/models/user";
-import { getFirstPaidOrderByUserUuid } from "@/models/order";
+import { credits as creditsTable } from "@/db/schema";
 import { getIsoTimestr } from "@/lib/time";
 import { getSnowId } from "@/lib/hash";
+import { Order } from "@/types/order";
+import { UserCredits } from "@/types/user";
+import { getFirstPaidOrderByUserUuid } from "@/models/order";
 
 export enum CreditsTransType {
   NewUser = "new_user", // initial credits for new user
@@ -37,8 +35,8 @@ export async function getUserCredits(user_uuid: string): Promise<UserCredits> {
 
     const credits = await getUserValidCredits(user_uuid);
     if (credits) {
-      credits.forEach((v: Credit) => {
-        user_credits.left_credits += v.credits;
+      credits.forEach((v) => {
+        user_credits.left_credits += v.credits || 0;
       });
     }
 
@@ -79,8 +77,8 @@ export async function decreaseCredits({
 
         // credit enough for cost
         if (left_credits >= credits) {
-          order_no = credit.order_no;
-          expired_at = credit.expired_at || "";
+          order_no = credit.order_no || "";
+          expired_at = credit.expired_at?.toISOString() || "";
           break;
         }
 
@@ -88,14 +86,14 @@ export async function decreaseCredits({
       }
     }
 
-    const new_credit: Credit = {
+    const new_credit: typeof creditsTable.$inferInsert = {
       trans_no: getSnowId(),
-      created_at: getIsoTimestr(),
+      created_at: new Date(getIsoTimestr()),
+      expired_at: new Date(expired_at),
       user_uuid: user_uuid,
       trans_type: trans_type,
       credits: 0 - credits,
       order_no: order_no,
-      expired_at: expired_at,
     };
     await insertCredit(new_credit);
   } catch (e) {
@@ -118,14 +116,14 @@ export async function increaseCredits({
   order_no?: string;
 }) {
   try {
-    const new_credit: Credit = {
+    const new_credit: typeof creditsTable.$inferInsert = {
       trans_no: getSnowId(),
-      created_at: getIsoTimestr(),
+      created_at: new Date(getIsoTimestr()),
       user_uuid: user_uuid,
       trans_type: trans_type,
       credits: credits,
       order_no: order_no || "",
-      expired_at: expired_at || "",
+      expired_at: expired_at ? new Date(expired_at) : null,
     };
     await insertCredit(new_credit);
   } catch (e) {

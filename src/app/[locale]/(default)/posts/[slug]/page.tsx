@@ -2,6 +2,7 @@ import { PostStatus, findPostBySlug } from "@/models/post";
 
 import BlogDetail from "@/components/blocks/blog-detail";
 import Empty from "@/components/blocks/empty";
+import { Post } from "@/types/post";
 
 export async function generateMetadata({
   params,
@@ -39,5 +40,5 @@ export default async function ({
     return <Empty message="Post not found" />;
   }
 
-  return <BlogDetail post={post} />;
+  return <BlogDetail post={post as unknown as Post} />;
 }

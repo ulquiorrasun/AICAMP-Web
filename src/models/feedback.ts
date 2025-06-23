@@ -1,79 +1,56 @@
-import { Feedback } from "@/types/feedback";
-import { getSupabaseClient } from "./db";
+import { feedbacks } from "@/db/schema";
+import { db } from "@/db";
 import { getUsersByUuids } from "./user";
+import { desc, eq } from "drizzle-orm";
 
-export async function insertFeedback(feedback: Feedback) {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from("feedbacks").insert(feedback);
+export async function insertFeedback(
+  data: typeof feedbacks.$inferInsert
+): Promise<typeof feedbacks.$inferSelect | undefined> {
+  const [feedback] = await db().insert(feedbacks).values(data).returning();
 
-  if (error) {
-    throw error;
-  }
-
-  return data;
+  return feedback;
 }
 
-export async function findFeedbackByUuid(
-  uuid: string
-): Promise<Feedback | undefined> {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("feedbacks")
-    .select("*")
-    .eq("uuid", uuid)
-    .single();
+export async function findFeedbackById(
+  id: number
+): Promise<typeof feedbacks.$inferSelect | undefined> {
+  const [feedback] = await db()
+    .select()
+    .from(feedbacks)
+    .where(eq(feedbacks.id, id))
+    .limit(1);
 
-  if (error) {
-    return undefined;
-  }
-
-  return data;
+  return feedback;
 }
 
 export async function getFeedbacks(
   page: number = 1,
   limit: number = 50
-): Promise<Feedback[] | undefined> {
-  if (page < 1) page = 1;
-  if (limit <= 0) limit = 50;
-
+): Promise<(typeof feedbacks.$inferSelect)[] | undefined> {
   const offset = (page - 1) * limit;
-  const supabase = getSupabaseClient();
 
-  const { data, error } = await supabase
-    .from("feedbacks")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .range(offset, offset + limit - 1);
-
-  if (error) {
-    return [];
-  }
+  const data = await db()
+    .select()
+    .from(feedbacks)
+    .orderBy(desc(feedbacks.created_at))
+    .limit(limit)
+    .offset(offset);
 
   if (!data || data.length === 0) {
     return [];
   }
 
   const user_uuids = Array.from(new Set(data.map((item) => item.user_uuid)));
-  const users = await getUsersByUuids(user_uuids);
+  const users = await getUsersByUuids(user_uuids as string[]);
 
-  const feedbacks = data.map((item) => {
-    const user = users.find((user) => user.uuid === item.user_uuid);
+  return data.map((item) => {
+    const user = users?.find((user) => user.uuid === item.user_uuid);
     return { ...item, user };
   });
-
-  return feedbacks;
 }
 
 export async function getFeedbacksTotal(): Promise<number | undefined> {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from("feedbacks").select("count", {
-    count: "exact",
-  });
+  const total = await db().$count(feedbacks);
 
-  if (error) {
-    return undefined;
-  }
-
-  return data[0].count;
+  return total;
 }

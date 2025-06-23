@@ -8,6 +8,7 @@ import { getClientIp } from "@/lib/ip";
 import { getIsoTimestr } from "@/lib/time";
 import { getUuid } from "@/lib/hash";
 import { saveUser } from "@/services/user";
+import { handleSignInUser } from "./handler";
 
 let providers: Provider[] = [];
 
@@ -147,33 +148,23 @@ export const authOptions: NextAuthConfig = {
     async jwt({ token, user, account }) {
       // Persist the OAuth access_token and or the user id to the token right after signin
       try {
-        if (user && user.email && account) {
-          const dbUser: User = {
-            uuid: getUuid(),
-            email: user.email,
-            nickname: user.name || "",
-            avatar_url: user.image || "",
-            signin_type: account.type,
-            signin_provider: account.provider,
-            signin_openid: account.providerAccountId,
-            created_at: getIsoTimestr(),
-            signin_ip: await getClientIp(),
-          };
-
-          try {
-            const savedUser = await saveUser(dbUser);
-
-            token.user = {
-              uuid: savedUser.uuid,
-              email: savedUser.email,
-              nickname: savedUser.nickname,
-              avatar_url: savedUser.avatar_url,
-              created_at: savedUser.created_at,
-            };
-          } catch (e) {
-            console.error("save user failed:", e);
-          }
+        if (!user || !account) {
+          return token;
         }
+
+        const userInfo = await handleSignInUser(user, account);
+        if (!userInfo) {
+          throw new Error("save user failed");
+        }
+
+        token.user = {
+          uuid: userInfo.uuid,
+          email: userInfo.email,
+          nickname: userInfo.nickname,
+          avatar_url: userInfo.avatar_url,
+          created_at: userInfo.created_at,
+        };
+
         return token;
       } catch (e) {
         console.error("jwt callback error:", e);

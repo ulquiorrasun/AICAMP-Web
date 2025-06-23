@@ -1,7 +1,5 @@
 import { respData, respErr } from "@/lib/resp";
 
-import { Feedback } from "@/types/feedback";
-import { getIsoTimestr } from "@/lib/time";
 import { getUserUuid } from "@/services/user";
 import { insertFeedback } from "@/models/feedback";
 
@@ -14,17 +12,17 @@ export async function POST(req: Request) {
 
     const user_uuid = await getUserUuid();
 
-    const feedback: Feedback = {
+    const feedback = {
       user_uuid: user_uuid,
       content: content,
       rating: rating,
-      created_at: getIsoTimestr(),
+      created_at: new Date(),
       status: "created",
     };
 
-    await insertFeedback(feedback);
+    const dbFeedback = await insertFeedback(feedback);
 
-    return respData(feedback);
+    return respData(dbFeedback);
   } catch (e) {
     console.log("add feedback failed", e);
     return respErr("add feedback failed");

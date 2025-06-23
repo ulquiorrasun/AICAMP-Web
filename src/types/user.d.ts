@@ -2,7 +2,7 @@ export interface User {
   id?: number;
   uuid?: string;
   email: string;
-  created_at?: string;
+  created_at?: string | Date;
   nickname: string;
   avatar_url: string;
   locale?: string;

@@ -3,11 +3,16 @@ import {
   increaseCredits,
   updateCreditForOrder,
 } from "./credit";
-import { findOrderByOrderNo, updateOrderStatus } from "@/models/order";
-import { getIsoTimestr, getOneYearLaterTimestr } from "@/lib/time";
+import {
+  findOrderByOrderNo,
+  OrderStatus,
+  updateOrderStatus,
+} from "@/models/order";
+import { getIsoTimestr } from "@/lib/time";
 
 import Stripe from "stripe";
 import { updateAffiliateForOrder } from "./affiliate";
+import { Order } from "@/types/order";
 
 export async function handleOrderSession(session: Stripe.Checkout.Session) {
   try {
@@ -26,21 +31,27 @@ export async function handleOrderSession(session: Stripe.Checkout.Session) {
     const paid_detail = JSON.stringify(session);
 
     const order = await findOrderByOrderNo(order_no);
-    if (!order || order.status !== "created") {
+    if (!order || order.status !== OrderStatus.Created) {
       throw new Error("invalid order");
     }
 
     const paid_at = getIsoTimestr();
-    await updateOrderStatus(order_no, "paid", paid_at, paid_email, paid_detail);
+    await updateOrderStatus(
+      order_no,
+      OrderStatus.Paid,
+      paid_at,
+      paid_email,
+      paid_detail
+    );
 
     if (order.user_uuid) {
       if (order.credits > 0) {
         // increase credits for paied order
-        await updateCreditForOrder(order);
+        await updateCreditForOrder(order as unknown as Order);
       }
 
       // update affiliate for paied order
-      await updateAffiliateForOrder(order);
+      await updateAffiliateForOrder(order as unknown as Order);
     }
 
     console.log(

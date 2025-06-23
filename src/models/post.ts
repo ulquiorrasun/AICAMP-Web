@@ -1,5 +1,6 @@
-import { Post } from "@/types/post";
-import { getSupabaseClient } from "./db";
+import { posts } from "@/db/schema";
+import { db } from "@/db";
+import { and, desc, eq } from "drizzle-orm";
 
 export enum PostStatus {
   Created = "created",
@@ -8,81 +9,64 @@ export enum PostStatus {
   Offline = "offline",
 }
 
-export async function insertPost(post: Post) {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from("posts").insert(post);
+export async function insertPost(
+  data: typeof posts.$inferInsert
+): Promise<typeof posts.$inferSelect | undefined> {
+  const [post] = await db().insert(posts).values(data).returning();
 
-  if (error) {
-    throw error;
-  }
-
-  return data;
+  return post;
 }
 
-export async function updatePost(uuid: string, post: Partial<Post>) {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("posts")
-    .update(post)
-    .eq("uuid", uuid);
+export async function updatePost(
+  uuid: string,
+  data: Partial<typeof posts.$inferInsert>
+): Promise<typeof posts.$inferSelect | undefined> {
+  const [post] = await db()
+    .update(posts)
+    .set(data)
+    .where(eq(posts.uuid, uuid))
+    .returning();
 
-  if (error) {
-    throw error;
-  }
-
-  return data;
+  return post;
 }
 
-export async function findPostByUuid(uuid: string): Promise<Post | undefined> {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("posts")
-    .select("*")
-    .eq("uuid", uuid)
-    .limit(1)
-    .single();
+export async function findPostByUuid(
+  uuid: string
+): Promise<typeof posts.$inferSelect | undefined> {
+  const [post] = await db()
+    .select()
+    .from(posts)
+    .where(eq(posts.uuid, uuid))
+    .limit(1);
 
-  if (error) {
-    return undefined;
-  }
-
-  return data;
+  return post;
 }
 
 export async function findPostBySlug(
   slug: string,
   locale: string
-): Promise<Post | undefined> {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("posts")
-    .select("*")
-    .eq("slug", slug)
-    .eq("locale", locale)
-    .limit(1)
-    .single();
+): Promise<typeof posts.$inferSelect | undefined> {
+  const [post] = await db()
+    .select()
+    .from(posts)
+    .where(and(eq(posts.slug, slug), eq(posts.locale, locale)))
+    .limit(1);
 
-  if (error) {
-    return undefined;
-  }
-
-  return data;
+  return post;
 }
 
 export async function getAllPosts(
   page: number = 1,
   limit: number = 50
-): Promise<Post[]> {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("posts")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .range((page - 1) * limit, page * limit - 1);
+): Promise<(typeof posts.$inferSelect)[] | undefined> {
+  const offset = (page - 1) * limit;
 
-  if (error) {
-    return [];
-  }
+  const data = await db()
+    .select()
+    .from(posts)
+    .orderBy(desc(posts.created_at))
+    .limit(limit)
+    .offset(offset);
 
   return data;
 }
@@ -91,32 +75,22 @@ export async function getPostsByLocale(
   locale: string,
   page: number = 1,
   limit: number = 50
-): Promise<Post[]> {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("posts")
-    .select("*")
-    .eq("locale", locale)
-    .eq("status", PostStatus.Online)
-    .order("created_at", { ascending: false })
-    .range((page - 1) * limit, page * limit - 1);
+): Promise<(typeof posts.$inferSelect)[] | undefined> {
+  const offset = (page - 1) * limit;
 
-  if (error) {
-    return [];
-  }
+  const data = await db()
+    .select()
+    .from(posts)
+    .where(and(eq(posts.locale, locale), eq(posts.status, PostStatus.Online)))
+    .orderBy(desc(posts.created_at))
+    .limit(limit)
+    .offset(offset);
 
   return data;
 }
 
-export async function getPostsTotal(): Promise<number | undefined> {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from("posts").select("count", {
-    count: "exact",
-  });
+export async function getPostsTotal(): Promise<number> {
+  const total = await db().$count(posts);
 
-  if (error) {
-    return undefined;
-  }
-
-  return data[0].count;
+  return total;
 }

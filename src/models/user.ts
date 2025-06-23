@@ -1,70 +1,51 @@
-import { User } from "@/types/user";
-import { getIsoTimestr } from "@/lib/time";
-import { getSupabaseClient } from "./db";
+import { users } from "@/db/schema";
+import { db } from "@/db";
+import { desc, eq, gte, inArray } from "drizzle-orm";
 
-export async function insertUser(user: User) {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from("users").insert(user);
+export async function insertUser(
+  data: typeof users.$inferInsert
+): Promise<typeof users.$inferSelect | undefined> {
+  const [user] = await db().insert(users).values(data).returning();
 
-  if (error) {
-    throw error;
-  }
-
-  return data;
+  return user;
 }
 
 export async function findUserByEmail(
   email: string
-): Promise<User | undefined> {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("users")
-    .select("*")
-    .eq("email", email)
-    .limit(1)
-    .single();
+): Promise<typeof users.$inferSelect | undefined> {
+  const [user] = await db()
+    .select()
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
 
-  if (error) {
-    return undefined;
-  }
-
-  return data;
+  return user;
 }
 
-export async function findUserByUuid(uuid: string): Promise<User | undefined> {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("users")
-    .select("*")
-    .eq("uuid", uuid)
-    .single();
+export async function findUserByUuid(
+  uuid: string
+): Promise<typeof users.$inferSelect | undefined> {
+  const [user] = await db()
+    .select()
+    .from(users)
+    .where(eq(users.uuid, uuid))
+    .limit(1);
 
-  if (error) {
-    return undefined;
-  }
-
-  return data;
+  return user;
 }
 
 export async function getUsers(
   page: number = 1,
   limit: number = 50
-): Promise<User[] | undefined> {
-  if (page < 1) page = 1;
-  if (limit <= 0) limit = 50;
-
+): Promise<(typeof users.$inferSelect)[] | undefined> {
   const offset = (page - 1) * limit;
-  const supabase = getSupabaseClient();
 
-  const { data, error } = await supabase
-    .from("users")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .range(offset, offset + limit - 1);
-
-  if (error) {
-    return undefined;
-  }
+  const data = await db()
+    .select()
+    .from(users)
+    .orderBy(desc(users.created_at))
+    .limit(limit)
+    .offset(offset);
 
   return data;
 }
@@ -72,113 +53,82 @@ export async function getUsers(
 export async function updateUserInviteCode(
   user_uuid: string,
   invite_code: string
-) {
-  const supabase = getSupabaseClient();
-  const updated_at = getIsoTimestr();
-  const { data, error } = await supabase
-    .from("users")
-    .update({ invite_code, updated_at })
-    .eq("uuid", user_uuid);
+): Promise<typeof users.$inferSelect | undefined> {
+  const [user] = await db()
+    .update(users)
+    .set({ invite_code, updated_at: new Date() })
+    .where(eq(users.uuid, user_uuid))
+    .returning();
 
-  if (error) {
-    throw error;
-  }
-
-  return data;
+  return user;
 }
 
 export async function updateUserInvitedBy(
   user_uuid: string,
   invited_by: string
-) {
-  const supabase = getSupabaseClient();
-  const updated_at = getIsoTimestr();
-  const { data, error } = await supabase
-    .from("users")
-    .update({ invited_by, updated_at })
-    .eq("uuid", user_uuid);
+): Promise<typeof users.$inferSelect | undefined> {
+  const [user] = await db()
+    .update(users)
+    .set({ invited_by, updated_at: new Date() })
+    .where(eq(users.uuid, user_uuid))
+    .returning();
 
-  if (error) {
-    throw error;
-  }
+  return user;
+}
+
+export async function getUsersByUuids(
+  user_uuids: string[]
+): Promise<(typeof users.$inferSelect)[] | undefined> {
+  const data = await db()
+    .select()
+    .from(users)
+    .where(inArray(users.uuid, user_uuids));
 
   return data;
 }
 
-export async function getUsersByUuids(user_uuids: string[]): Promise<User[]> {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("users")
-    .select("*")
-    .in("uuid", user_uuids);
-  if (error) {
-    return [];
-  }
+export async function findUserByInviteCode(
+  invite_code: string
+): Promise<typeof users.$inferSelect | undefined> {
+  const [user] = await db()
+    .select()
+    .from(users)
+    .where(eq(users.invite_code, invite_code))
+    .limit(1);
 
-  return data as User[];
+  return user;
 }
 
-export async function findUserByInviteCode(invite_code: string) {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("users")
-    .select("*")
-    .eq("invite_code", invite_code)
-    .single();
-
-  if (error) {
-    return undefined;
-  }
-
-  return data;
-}
-
-export async function getUserUuidsByEmail(email: string) {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("users")
-    .select("uuid")
-    .eq("email", email);
-  if (error) {
-    return [];
-  }
+export async function getUserUuidsByEmail(
+  email: string
+): Promise<string[] | undefined> {
+  const data = await db()
+    .select({ uuid: users.uuid })
+    .from(users)
+    .where(eq(users.email, email));
 
   return data.map((user) => user.uuid);
 }
 
-export async function getUsersTotal(): Promise<number | undefined> {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from("users").select("count", {
-    count: "exact",
-  });
+export async function getUsersTotal(): Promise<number> {
+  const total = await db().$count(users);
 
-  if (error) {
-    return undefined;
-  }
-
-  return data[0].count;
+  return total;
 }
 
 export async function getUserCountByDate(
   startTime: string
 ): Promise<Map<string, number> | undefined> {
-  const supabase = getSupabaseClient();
-  let query = supabase
-    .from("users")
-    .select("created_at")
-    .gte("created_at", startTime);
+  const data = await db()
+    .select({ created_at: users.created_at })
+    .from(users)
+    .where(gte(users.created_at, new Date(startTime)));
 
-  query = query.order("created_at", { ascending: true });
+  data.sort((a, b) => a.created_at!.getTime() - b.created_at!.getTime());
 
-  const { data, error } = await query;
-  if (error) {
-    return undefined;
-  }
-
-  // Group by date in memory since Supabase doesn't support GROUP BY directly
   const dateCountMap = new Map<string, number>();
   data.forEach((item) => {
-    const date = item.created_at.split("T")[0];
+    const date = item.created_at!.toISOString().split("T")[0];
     dateCountMap.set(date, (dateCountMap.get(date) || 0) + 1);
   });
 

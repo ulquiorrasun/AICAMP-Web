@@ -1,5 +1,8 @@
 import { RiDiscordFill, RiEmotionSadFill, RiGithubFill } from "react-icons/ri";
-import { getAffiliateSummary, getUserAffiliates } from "@/models/affiliate";
+import {
+  getAffiliatesByUserUuid,
+  getAffiliateSummary,
+} from "@/models/affiliate";
 import { getOrdersByPaidEmail, getOrdersByUserUuid } from "@/models/order";
 import { getUserEmail, getUserUuid } from "@/services/user";
 
@@ -75,7 +78,7 @@ export default async function () {
     }
   }
 
-  const affiliates = await getUserAffiliates(user_uuid);
+  const affiliates = await getAffiliatesByUserUuid(user_uuid);
 
   const summary = await getAffiliateSummary(user_uuid);
 

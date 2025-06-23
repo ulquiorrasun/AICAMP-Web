@@ -3,6 +3,7 @@ import { respData, respErr, respJson } from "@/lib/resp";
 import { findUserByUuid } from "@/models/user";
 import { getUserUuid } from "@/services/user";
 import { getUserCredits } from "@/services/credit";
+import { User } from "@/types/user";
 
 export async function POST(req: Request) {
   try {
@@ -11,12 +12,17 @@ export async function POST(req: Request) {
       return respJson(-2, "no auth");
     }
 
-    const user = await findUserByUuid(user_uuid);
-    if (!user) {
+    const dbUser = await findUserByUuid(user_uuid);
+    if (!dbUser) {
       return respErr("user not exist");
     }
 
-    user.credits = await getUserCredits(user_uuid);
+    const userCredits = await getUserCredits(user_uuid);
+
+    const user = {
+      ...(dbUser as unknown as User),
+      credits: userCredits,
+    };
 
     return respData(user);
   } catch (e) {

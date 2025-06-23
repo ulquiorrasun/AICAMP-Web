@@ -8,6 +8,7 @@ import { findUserByUuid } from "@/models/user";
 import { getSnowId } from "@/lib/hash";
 import { getPricingPage } from "@/services/page";
 import { PricingItem } from "@/types/blocks/pricing";
+import { orders } from "@/db/schema";
 
 export async function POST(req: Request) {
   try {
@@ -115,14 +116,14 @@ export async function POST(req: Request) {
 
     expired_at = newDate.toISOString();
 
-    const order: Order = {
+    const order = {
       order_no: order_no,
-      created_at: created_at,
+      created_at: new Date(created_at),
       user_uuid: user_uuid,
       user_email: user_email,
       amount: amount,
       interval: interval,
-      expired_at: expired_at,
+      expired_at: new Date(expired_at),
       status: "created",
       credits: credits,
       currency: currency,
@@ -130,7 +131,7 @@ export async function POST(req: Request) {
       product_name: product_name,
       valid_months: valid_months,
     };
-    await insertOrder(order);
+    await insertOrder(order as typeof orders.$inferInsert);
 
     const stripe = new Stripe(process.env.STRIPE_PRIVATE_KEY || "");
 
