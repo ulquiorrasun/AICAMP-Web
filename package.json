@@ -1,6 +1,6 @@
 {
   "name": "shipany-template-one",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "private": true,
   "author": "idoubi",
   "homepage": "https://shipany.ai",
@@ -120,7 +120,6 @@
     "tailwindcss": "^4.1.4",
     "tsx": "^4.20.3",
     "typescript": "^5.7.2",
-    "vercel": "39.1.1",
-    "wrangler": "3.97.0"
+    "vercel": "39.1.1"
   }
 }
