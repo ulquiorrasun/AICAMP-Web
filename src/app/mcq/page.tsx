@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 import { SubmitHandler, useForm } from "react-hook-form";
 import {
   Form,
@@ -44,6 +46,7 @@ const GRADES = [
 ];
 
 export default function MCQPage() {
+  const isMobile = useIsMobile();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<any>(null);
@@ -84,8 +87,13 @@ export default function MCQPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-2xl p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Generate an MCQ</h1>
+    <div
+      className={cn(
+        "mx-auto space-y-6",
+        isMobile ? "px-4 py-4" : "container max-w-2xl p-6"
+      )}
+    >
+      <h1 className={cn("font-bold", isMobile ? "text-xl" : "text-2xl")}>Generate an MCQ</h1>
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -132,7 +140,7 @@ export default function MCQPage() {
             )}
           />
 
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading} className={isMobile ? "w-full" : undefined}>
             {loading ? "Generating..." : "Generate"}
           </Button>
         </form>
@@ -140,7 +148,7 @@ export default function MCQPage() {
 
       {/* Result */}
       <div>
-        {loading && <Skeleton className="h-32 w-full" />}
+        {loading && <Skeleton className="h-32 md:h-24 w-full" />}
         {error && <Alert variant="destructive">{error}</Alert>}
         {result && (
           <div className="space-y-2 rounded-md border p-4">
