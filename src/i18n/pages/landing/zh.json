@@ -56,7 +56,7 @@
       {
         "title": "立即开始",
         "icon": "RiFlashlightFill",
-        "url": "/#pricing",
+        "url": "/tools",
         "target": "_self",
         "variant": "default"
       },

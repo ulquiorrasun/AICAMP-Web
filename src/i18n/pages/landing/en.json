@@ -56,7 +56,7 @@
       {
         "title": "Get Started",
         "icon": "RiFlashlightFill",
-        "url": "/#pricing",
+        "url": "/tools",
         "target": "_self",
         "variant": "default"
       },

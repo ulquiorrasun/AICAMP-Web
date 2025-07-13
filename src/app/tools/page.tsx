@@ -26,7 +26,7 @@ const tools: Tool[] = [
     name: "撰写专业邮件",
     tagline: "根据需求生成专业、得体的商务和学术邮件",
     category: "创意工坊",
-    link: "#",
+    link: "/email",
   },
   {
     id: "concept",
@@ -77,17 +77,17 @@ const categories = ["全部", "智慧课堂", "百科大全", "创意工坊", "�
 export default function ToolsPage() {
   return (
     <div className="container mx-auto px-4 py-8 space-y-10">
-      {/* Featured section */}
+      {/* 推荐区块 */}
       <section className="space-y-4">
-        <h2 className="text-xl font-semibold">推荐给你</h2>
+        <h2 className="text-xl font-bold text-[#FF7A1A] tracking-tight mb-2">推荐给你</h2>
         <ToolGrid tools={tools.filter((t) => t.badge === "our-pick")} />
       </section>
 
-      <h1 className="text-2xl font-bold">所有工具</h1>
+      <h1 className="text-2xl font-bold text-[#FF7A1A] mt-10 mb-4 tracking-tight">所有工具</h1>
       <Tabs defaultValue="全部" className="space-y-4">
-        <TabsList className="w-full overflow-x-auto">
+        <TabsList className="w-full overflow-x-auto bg-[#FFF5ED] rounded-xl p-1 flex gap-2 mb-4">
           {categories.map((c) => (
-            <TabsTrigger key={c} value={c} className="whitespace-nowrap">
+            <TabsTrigger key={c} value={c} className="whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium data-[state=active]:bg-[#FF7A1A] data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:font-bold data-[state=active]:scale-105 transition-all">
               {c}
             </TabsTrigger>
           ))}

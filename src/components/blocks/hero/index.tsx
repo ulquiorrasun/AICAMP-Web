@@ -75,7 +75,7 @@ export default function Hero({ hero }: { hero: HeroType }) {
                       <Button
                         className="w-full"
                         size="lg"
-                        variant={item.variant || "default"}
+                        variant={item.variant === 'destructive' ? 'default' : item.variant || 'default'}
                       >
                         {item.icon && <Icon name={item.icon} className="" />}
                         {item.title}

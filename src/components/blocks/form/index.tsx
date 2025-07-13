@@ -221,7 +221,7 @@ export default function ({
         {submit?.button && (
           <Button
             type="submit"
-            variant={submit.button.variant}
+            variant={submit.button.variant === 'destructive' ? 'default' : submit.button.variant}
             className="flex items-center justify-center gap-2 font-semibold cursor-pointer"
             disabled={loading}
           >

@@ -149,7 +149,7 @@ export default function Header({ header }: { header: HeaderType }) {
 
             {header.buttons?.map((item, i) => {
               return (
-                <Button key={i} variant={item.variant}>
+                <Button key={i} variant={item.variant === 'destructive' ? 'default' : item.variant}>
                   <Link
                     href={item.url as any}
                     target={item.target || ""}
@@ -281,7 +281,7 @@ export default function Header({ header }: { header: HeaderType }) {
                   <div className="mt-2 flex flex-col gap-3">
                     {header.buttons?.map((item, i) => {
                       return (
-                        <Button key={i} variant={item.variant}>
+                        <Button key={i} variant={item.variant === 'destructive' ? 'default' : item.variant}>
                           <Link
                             href={item.url as any}
                             target={item.target || ""}

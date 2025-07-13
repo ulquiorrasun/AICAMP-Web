@@ -9,7 +9,7 @@ export default function Toolbar({ items }: { items?: ButtonType[] }) {
       {items?.map((item, idx) => (
         <Button
           key={idx}
-          variant={item.variant}
+          variant={item.variant === 'destructive' ? 'default' : item.variant}
           size="sm"
           className={item.className}
         >
